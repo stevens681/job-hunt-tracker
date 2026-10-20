@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Job Hunt Tracker</title>
+<script>/* apply saved theme before paint */try{var t=localStorage.getItem("jh-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<style>
+/* Ink wash palette: #252525 ink · #545454 graphite · #7D7D7D slate · #CFCFCF mist */
+:root{
+  --ink:#252525;--graphite:#545454;--slate:#7D7D7D;--mist:#CFCFCF;
+  --bg:#F3F3F3;--panel:#FFFFFF;--soft:#E7E7E7;--line:#CFCFCF;--text:#252525;--muted:#545454;
+  --btn:#252525;--btn-ink:#FFFFFF;--chip:#E7E7E7;--scrim:rgba(37,37,37,.45);
+  --st-wishlist:#7A5AF8;--st-applied:#2563EB;--st-screening:#0891B2;--st-interviewing:#D97706;--st-offer:#16A34A;--st-accepted:#047857;--st-rejected:#DC2626;--st-withdrawn:#78716C;
+  --f-body:"Inter","Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1B1B1B;--panel:#252525;--soft:#2F2F2F;--line:#545454;--text:#EDEDED;--muted:#ABABAB;
+  --btn:#CFCFCF;--btn-ink:#252525;--chip:#363636;--scrim:rgba(0,0,0,.6);
+  --st-wishlist:#A08BFF;--st-applied:#6B9BFF;--st-screening:#34C3DB;--st-interviewing:#F5B03C;--st-offer:#4ADE80;--st-accepted:#34D399;--st-rejected:#F87171;--st-withdrawn:#A8A29E;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1B1B1B;--panel:#252525;--soft:#2F2F2F;--line:#545454;--text:#EDEDED;--muted:#ABABAB;
+  --btn:#CFCFCF;--btn-ink:#252525;--chip:#363636;--scrim:rgba(0,0,0,.6);
+  --st-wishlist:#A08BFF;--st-applied:#6B9BFF;--st-screening:#34C3DB;--st-interviewing:#F5B03C;--st-offer:#4ADE80;--st-accepted:#34D399;--st-rejected:#F87171;--st-withdrawn:#A8A29E;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+h1,h2,h3{text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(28px,4.5vw,42px);font-weight:500;letter-spacing:-.03em}
+h2{font-size:18px;font-weight:600}
+h3{font-size:15px;font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+input[type=checkbox]{accent-color:var(--text)}
+:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:7px 12px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.btn.danger.armed{background:var(--text);color:var(--bg);border-color:var(--text)}
+.btn.sm{padding:4px 9px;font-size:13px}
+input[type=text],input[type=url],input[type=email],input[type=date],input[type=search],select,textarea{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 9px;min-width:0}
+textarea{resize:vertical;min-height:80px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+label.f>span{letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+header.top p{margin:6px 0 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{border:0;background:var(--panel);padding:6px 10px;font-size:13px;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--btn);color:var(--btn-ink)}
+.banner{margin-top:16px;padding:10px 14px;border-radius:4px;background:var(--soft);border:1px dashed var(--line);color:var(--muted)}
+
+.swatch{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:20px;border:1px solid var(--line)}
+.stat{padding:14px 16px 12px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;min-height:96px}
+.stat b{font-family:var(--f-mono);font-size:28px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1}
+.stat span{font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.stat:nth-child(1){background:var(--ink);color:#FFFFFF}
+.stat:nth-child(2){background:var(--graphite);color:#FFFFFF}
+.stat:nth-child(3){background:var(--slate);color:#FFFFFF}
+.stat:nth-child(4){background:var(--mist);color:var(--ink)}
+.stat:nth-child(5){background:var(--panel);color:var(--text)}
+.stat.alert b{text-decoration:underline;text-underline-offset:4px}
+@media (max-width:720px){.swatch{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:last-child{grid-column:span 2}}
+
+.funnel{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.funnel-bar{display:flex;height:10px;overflow:hidden;background:var(--soft);border:1px solid var(--line)}
+.funnel-bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+.legend em{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+.st-wishlist{--st:var(--st-wishlist)}.st-applied{--st:var(--st-applied)}.st-screening{--st:var(--st-screening)}.st-interviewing{--st:var(--st-interviewing)}.st-offer{--st:var(--st-offer)}.st-accepted{--st:var(--st-accepted)}.st-rejected{--st:var(--st-rejected)}.st-withdrawn{--st:var(--st-withdrawn)}
+.mark{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;background:var(--st)}
+.funnel-bar i{background:var(--st)}
+.stage-pill{appearance:none;-webkit-appearance:none;border:1px solid var(--st);background:color-mix(in srgb,var(--st) 16%,var(--panel));color:var(--text);font-size:12px;font-weight:600;border-radius:999px;padding:2px 22px 2px 10px;cursor:pointer;width:auto;max-width:100%;
+  background-image:linear-gradient(45deg,transparent 50%,var(--st) 50%),linear-gradient(135deg,var(--st) 50%,transparent 50%);background-position:calc(100% - 11px) 55%,calc(100% - 7px) 55%;background-size:4px 4px;background-repeat:no-repeat}
+.stage-pill:hover{background-color:color-mix(in srgb,var(--st) 28%,var(--panel))}
+.stage-pill option{background:var(--panel);color:var(--text)}
+.card-top{display:flex;flex-direction:column-reverse;align-items:flex-start;gap:6px}
+nav.tabs{display:flex;gap:2px;margin-top:24px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav.tabs button{border:0;background:none;padding:10px 14px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
+nav.tabs .count{font-family:var(--f-mono);font-size:11px;background:var(--chip);border-radius:3px;padding:1px 6px;margin-left:6px}
+section.view{padding-top:18px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.toolbar .grow{flex:1 1 200px;min-width:0}
+
+.board-scroll{overflow-x:auto;padding-bottom:10px}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,1fr);gap:10px;min-width:min-content}
+.col{background:color-mix(in srgb,var(--st) 7%,var(--soft));padding:10px;display:flex;flex-direction:column;gap:8px;min-height:180px;min-width:240px;border-top:4px solid var(--st);border-radius:0 0 4px 4px}
+.col.drop{outline:2px dashed var(--st);outline-offset:-2px;background:color-mix(in srgb,var(--st) 18%,var(--soft))}
+.col-head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;padding:2px 2px 4px}
+.col-head .n{margin-left:auto;font-family:var(--f-mono);color:var(--muted);font-weight:400}
+.col-empty{font-size:12px;color:var(--muted);padding:8px 4px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:10px 11px;display:flex;flex-direction:column;gap:6px;cursor:grab}
+.card:hover{border-color:var(--st)}
+.card{border-left:1px solid var(--line)}
+.card .co{font-weight:600;font-size:14px;line-height:1.3}
+.card .role{color:var(--muted);font-size:13px;line-height:1.35}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:3px;padding:1px 6px;font-size:11.5px;background:var(--chip);color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.res{background:transparent;border:1px solid var(--line);color:var(--text)}
+.chip.hi{background:var(--btn);color:var(--btn-ink)}
+.next{font-size:12px;border-top:1px dashed var(--line);padding-top:6px;display:flex;gap:6px;justify-content:space-between}
+.next .when{font-family:var(--f-mono);flex:none}
+.late{font-weight:700;background:var(--btn);color:var(--btn-ink);padding:0 4px;border-radius:2px}
+
+.addrow{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr) minmax(0,1.4fr) auto;gap:8px;align-items:end;background:var(--panel);border:1px solid var(--line);padding:12px}
+@media (max-width:720px){.addrow{grid-template-columns:1fr 1fr}.addrow label:first-child{grid-column:span 2}}
+.group{margin-top:18px}
+.group h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;display:flex;gap:8px}
+.group h3.overdue{color:var(--text)}
+.tlist{list-style:none;margin:0;padding:0;background:var(--panel);border:1px solid var(--line)}
+.tlist li{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line)}
+.tlist li:first-child{border-top:0}
+.tlist input[type=checkbox]{width:17px;height:17px;accent-color:var(--text);flex:none}
+.tlist .tt{flex:1;min-width:0}
+.tlist .tt small{display:block;color:var(--muted);font-size:12px}
+.tlist .done .tt{text-decoration:line-through;color:var(--muted)}
+.tlist .due{font-family:var(--f-mono);font-size:12px;color:var(--muted);flex:none}
+.x{border:0;background:none;color:var(--muted);padding:2px 6px;border-radius:3px;font-size:16px;line-height:1}
+.x:hover{color:var(--text);background:var(--soft)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left;min-width:0}
+button.tile{cursor:pointer}
+button.tile:hover{border-color:var(--muted)}
+.tile .preview{color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.file{display:flex;align-items:center;gap:8px;font-size:13px;padding:8px;background:var(--soft);min-width:0;flex-wrap:wrap}
+.file .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.used{font-size:12px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{border:1px solid var(--line);background:var(--panel);border-radius:3px;padding:4px 11px;font-size:13px}
+.fchip[aria-pressed="true"]{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.empty{background:var(--panel);border:1px dashed var(--line);padding:28px;text-align:center;color:var(--muted)}
+
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--panel);z-index:21;display:flex;flex-direction:column;border-left:1px solid var(--line)}
+.dhead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.dhead h2{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbody{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.dfoot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+.dfoot .sp{flex:1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.two{grid-template-columns:1fr}}
+.sub{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.sub h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.timeline li{display:flex;gap:10px;align-items:center;font-size:13px}
+.timeline .mono{color:var(--muted);font-size:12px;width:84px;flex:none}
+.hint{font-size:12px;color:var(--muted)}
+.linkrow{display:flex;gap:6px}
+.backup{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--btn);color:var(--btn-ink);padding:10px 16px;border-radius:4px;z-index:30;font-size:13px;max-width:calc(100% - 32px)}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Job Hunt Tracker</h1>
+      <p class="muted">Every application, the resume you sent, your prep notes and what to do next. Saved on this computer.</p>
+    </div>
+    <div class="actions">
+      <div class="seg" role="group" aria-label="Theme" id="themeSeg">
+        <button data-theme-set="system">Auto</button><button data-theme-set="light">Light</button><button data-theme-set="dark">Dark</button>
+      </div>
+      <button class="btn" data-action="new-task-focus">+ Task</button>
+      <button class="btn primary" data-action="new-app">+ Application</button>
+    </div>
+  </header>
+  <div class="banner" id="storeWarn" hidden>This browser is blocking local storage, so changes won't be kept after you close the page. Open the file in Chrome, Edge or Firefox with normal (not private) browsing.</div>
+
+  <div class="swatch" id="stats"></div>
+  <div class="funnel" id="funnel"></div>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="board" aria-selected="true">Pipeline<span class="count" id="c-board">0</span></button>
+    <button role="tab" data-tab="tasks" aria-selected="false">Tasks<span class="count" id="c-tasks">0</span></button>
+    <button role="tab" data-tab="resumes" aria-selected="false">Resumes<span class="count" id="c-resumes">0</span></button>
+    <button role="tab" data-tab="kb" aria-selected="false">Knowledge base<span class="count" id="c-kb">0</span></button>
+  </nav>
+
+  <section class="view" id="v-board">
+    <div class="toolbar">
+      <input class="grow" type="search" id="appSearch" placeholder="Filter by company, role or location">
+      <label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="showClosed" checked> Show closed</label>
+      <button class="btn" data-action="csv-apps">Export CSV</button>
+    </div>
+    <div class="board-scroll"><div class="board" id="board"></div></div>
+    <p class="hint">Drag a card to another column to change its stage, or open it and pick a stage. Moving to Applied, Interviewing or Offer adds the next task for you.</p>
+  </section>
+
+  <section class="view" id="v-tasks" hidden>
+    <form class="addrow" id="taskForm">
+      <label class="f"><span>Task</span><input type="text" id="tTitle" placeholder="e.g. Email recruiter about timeline" required></label>
+      <label class="f"><span>Due</span><input type="date" id="tDue"></label>
+      <label class="f"><span>Application</span><select id="tApp"></select></label>
+      <button class="btn primary" type="submit">Add</button>
+    </form>
+    <div id="taskGroups"></div>
+  </section>
+
+  <section class="view" id="v-resumes" hidden>
+    <div class="toolbar">
+      <p class="hint grow" style="margin:0">Keep each tailored version here and pick it on the application, so you always know which resume a company saw. PDF and Word files both work.</p>
+      <button class="btn primary" data-action="new-resume">+ Resume version</button>
+    </div>
+    <div class="grid" id="resumeGrid"></div>
+  </section>
+
+  <section class="view" id="v-kb" hidden>
+    <div class="toolbar">
+      <input class="grow" type="search" id="kbSearch" placeholder="Search notes, stories, templates">
+      <button class="btn primary" data-action="new-kb">+ Entry</button>
+    </div>
+    <div class="chips" id="kbChips" style="margin-bottom:14px"></div>
+    <div class="grid" id="kbGrid"></div>
+  </section>
+
+  <div class="backup">
+    <div><h3>Export &amp; backup</h3><p class="hint" style="margin:2px 0 0">CSV files open in Excel or Google Sheets. Your data lives in this browser only, so export a backup now and then; it also moves everything to another computer.</p></div>
+    <div class="actions">
+      <button class="btn" data-action="csv-apps">Applications CSV</button>
+      <button class="btn" data-action="csv-tasks">Tasks CSV</button>
+      <button class="btn" data-action="export">Export backup</button>
+      <button class="btn" data-action="import">Import backup</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden data-action="close"></div>
+<aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog" aria-labelledby="dTitle">
+  <div class="dhead"><h2 id="dTitle"></h2><button class="x" data-action="close" aria-label="Close">×</button></div>
+  <div class="dbody" id="dBody"></div>
+  <div class="dfoot" id="dFoot"></div>
+</aside>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===== constants ===== */
+const STAGES=[["wishlist","Wishlist"],["applied","Applied"],["screening","Screening"],["interviewing","Interviewing"],["offer","Offer"],["accepted","Accepted"],["rejected","Rejected"],["withdrawn","Withdrawn / ghosted"]];
+const STAGE_NAME=Object.fromEntries(STAGES);
+const ACTIVE=["applied","screening","interviewing","offer"];
+const CLOSED=["accepted","rejected","withdrawn"];
+const RESPONDED=["screening","interviewing","offer","accepted"];
+const KB_CATS=["STAR story","Company research","Interview Q&A","Template","Note"];
+const FILE_TYPES={pdf:"application/pdf",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",doc:"application/msword",txt:"text/plain",md:"text/markdown",rtf:"application/rtf",odt:"application/vnd.oasis.opendocument.text"};
+
+/* ===== helpers ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const ds=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>ds(new Date());
+const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ds(d)};
+const parse=s=>{if(!s)return null;const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const fmt=s=>{const d=parse(s);if(!d)return "";const o={month:"short",day:"numeric"};if(d.getFullYear()!==new Date().getFullYear())o.year="numeric";return d.toLocaleDateString(undefined,o)};
+const isLate=s=>s&&s<today();
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36);
+const mark=s=>`<span class="mark st-${s}" aria-hidden="true"></span>`;
+const fmtSize=b=>b>1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB";
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200)}
+
+/* ===== local storage (IndexedDB, with localStorage fallback) ===== */
+let S={apps:[],resumes:[],kb:[],tasks:[]};
+let idb=null;
+function openIdb(){return new Promise(res=>{try{const r=indexedDB.open("job-hunt-tracker",1);
+  r.onupgradeneeded=()=>{r.result.createObjectStore("meta");r.result.createObjectStore("files")};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)}catch(e){res(null)}})}
+function idbDo(store,mode,fn){return new Promise((res,rej)=>{const tx=idb.transaction(store,mode);const req=fn(tx.objectStore(store));tx.oncomplete=()=>res(req&&req.result);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
+async function loadState(){
+  if(idb){const v=await idbDo("meta","readonly",s=>s.get("state"));if(v)return v}
+  try{const v=localStorage.getItem("jh-state");if(v)return JSON.parse(v)}catch(e){}
+  return null;
+}
+async function persist(){
+  try{
+    if(idb)await idbDo("meta","readwrite",s=>s.put(S,"state"));
+    else localStorage.setItem("jh-state",JSON.stringify(S));
+  }catch(e){console.error(e);toast("Couldn't save. Your browser storage may be full.")}
+  render();
+}
+const putFile=(id,blob)=>idb?idbDo("files","readwrite",s=>s.put(blob,id)):Promise.reject(new Error("no idb"));
+const getFile=id=>idb?idbDo("files","readonly",s=>s.get(id)):Promise.resolve(null);
+const delFile=id=>idb?idbDo("files","readwrite",s=>s.delete(id)).catch(()=>{}):Promise.resolve();
+
+const col=name=>({
+  add:async o=>{const id=uid();S[name].push({id,...o});await persist();return id},
+  update:async(id,o)=>{const x=S[name].find(r=>r.id===id);if(x)Object.assign(x,o);await persist()},
+  del:async id=>{S[name]=S[name].filter(r=>r.id!==id);await persist()}
+});
+const appName=id=>{const a=S.apps.find(x=>x.id===id);return a?a.company+" · "+a.role:""};
+const resName=id=>{const r=S.resumes.find(x=>x.id===id);return r?r.name:""};
+
+/* ===== starter data (first run only) ===== */
+function seed(){
+  const now=new Date().toISOString();
+  return {
+    resumes:[],apps:[],tasks:[],
+    kb:[
+      {id:"k-star",title:"STAR story template",category:"STAR story",appId:"",tags:"interview",updatedAt:now,body:"Situation:\n\nTask:\n\nAction:\n\nResult (with a number if you can):\n"},
+      {id:"k-followup",title:"Follow-up email after applying",category:"Template",appId:"",tags:"email, follow-up",updatedAt:now,body:"Subject: Following up – [Role] application\n\nHi [Name],\n\nI applied for the [Role] position on [date] and wanted to confirm my interest. My background in [one specific match from the posting] lines up closely with what the team needs, and I'd welcome the chance to talk.\n\nHappy to send anything else that would help.\n\nThanks,\n[Your name]"},
+      {id:"k-thanks",title:"Thank-you note after an interview",category:"Template",appId:"",tags:"email, interview",updatedAt:now,body:"Subject: Thank you – [Role] interview\n\nHi [Name],\n\nThank you for the time today. I enjoyed hearing about [specific thing they mentioned], and it reinforced my interest in the role. [One sentence connecting your experience to that point.]\n\nLooking forward to next steps.\n\nBest,\n[Your name]"},
+      {id:"k-ask",title:"Questions to ask the interviewer",category:"Interview Q&A",appId:"",tags:"interview",updatedAt:now,body:"• What does success look like in the first 90 days?\n• What's the biggest challenge the team is facing right now?\n• How is the team structured, and who would I work with most?\n• How do you measure performance for this role?\n• What are the next steps and timeline in the process?"}]
+  };
+}
+
+/* ===== theme ===== */
+function applyTheme(mode){
+  if(mode==="light"||mode==="dark")document.documentElement.setAttribute("data-theme",mode);
+  else document.documentElement.removeAttribute("data-theme");
+  try{localStorage.setItem("jh-theme",mode)}catch(e){}
+  document.querySelectorAll("[data-theme-set]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.themeSet===mode));
+}
+
+/* ===== render ===== */
+let tab="board",kbCat="All",drawer=null;
+function render(){renderStats();renderBoard();renderTasks();renderResumes();renderKb();
+  $("#c-board").textContent=S.apps.length;
+  $("#c-tasks").textContent=S.tasks.filter(t=>!t.done).length;
+  $("#c-resumes").textContent=S.resumes.length;
+  $("#c-kb").textContent=S.kb.length;
+  if(drawer&&drawer.kind==="app"&&drawer.id)renderAppLinks();
+}
+const reached=(a,list)=>list.includes(a.stage)||(a.history||[]).some(h=>list.includes(h.stage));
+function renderStats(){
+  const apps=S.apps, sent=apps.filter(a=>a.stage!=="wishlist");
+  const active=apps.filter(a=>ACTIVE.includes(a.stage)).length;
+  const resp=sent.filter(a=>reached(a,RESPONDED)).length;
+  const inter=apps.filter(a=>reached(a,["interviewing","offer","accepted"])).length;
+  const due=S.tasks.filter(t=>!t.done&&t.due&&t.due<=today()).length;
+  const rate=sent.length?Math.round(resp/sent.length*100)+"%":"—";
+  $("#stats").innerHTML=[["In progress",active],["Sent",sent.length],["Response rate",rate],["Reached interview",inter],["Tasks due today",due,due>0]]
+    .map(([l,v,al])=>`<div class="stat${al?" alert":""}"><b>${v}</b><span>${l}</span></div>`).join("");
+  const counts=STAGES.map(([k,n])=>[k,n,apps.filter(a=>a.stage===k).length]).filter(x=>x[2]);
+  const total=apps.length||1;
+  $("#funnel").innerHTML=apps.length?`<div class="funnel-bar" role="img" aria-label="Applications by stage">${counts.map(([k,n,c])=>`<i class="st-${k}" style="width:${c/total*100}%" title="${esc(n)}: ${c}"></i>`).join("")}</div>
+    <div class="legend">${counts.map(([k,n,c])=>`<em>${mark(k)}${esc(n)} <span class="mono">${c}</span></em>`).join("")}</div>`:"";
+}
+function renderBoard(){
+  const q=($("#appSearch").value||"").toLowerCase(), showClosed=$("#showClosed").checked;
+  $("#board").innerHTML=STAGES.filter(([k])=>showClosed||!CLOSED.includes(k)).map(([k,name])=>{
+    const items=S.apps.filter(a=>a.stage===k&&(!q||[a.company,a.role,a.location].join(" ").toLowerCase().includes(q)))
+      .sort((a,b)=>(a.nextDate||"9999").localeCompare(b.nextDate||"9999"));
+    return `<div class="col st-${k}" data-stage="${k}">
+      <div class="col-head">${mark(k)}${esc(name)}<span class="n">${items.length}</span></div>
+      ${items.map(cardHtml).join("")||`<div class="col-empty">${k==="wishlist"?"Roles you want to apply to.":"Nothing here yet."}</div>`}
+    </div>`}).join("");
+}
+function cardHtml(a){
+  const res=resName(a.resumeId);
+  return `<div class="card st-${a.stage}" role="button" tabindex="0" draggable="true" data-open-app="${a.id}">
+    <div class="card-top"><div class="co">${esc(a.company)}</div>
+      <select class="stage-pill st-${a.stage}" data-stage-for="${a.id}" aria-label="Stage for ${esc(a.company)}">${STAGES.map(([k,n])=>`<option value="${k}"${k===a.stage?" selected":""}>${esc(n)}</option>`).join("")}</select></div>
+    <div class="role">${esc(a.role)}</div>
+    <div class="meta">
+      ${a.priority==="High"?`<span class="chip hi">High priority</span>`:""}
+      ${a.appliedOn?`<span class="mono muted">Applied ${fmt(a.appliedOn)}</span>`:""}
+      ${a.workType?`<span class="chip">${esc(a.workType)}</span>`:""}
+      ${res?`<span class="chip res" title="Resume sent">Resume: ${esc(res)}</span>`:""}
+    </div>
+    ${a.nextStep?`<div class="next"><span>${esc(a.nextStep)}</span>${a.nextDate?`<span class="when${isLate(a.nextDate)?" late":""}">${fmt(a.nextDate)}</span>`:""}</div>`:""}
+  </div>`;
+}
+const appOptions=sel=>`<option value="">No application</option>`+S.apps.slice().sort((a,b)=>a.company.localeCompare(b.company)).map(a=>`<option value="${a.id}"${a.id===sel?" selected":""}>${esc(a.company)} · ${esc(a.role)}</option>`).join("");
+function taskLi(t){
+  const due=t.due?`<span class="due${!t.done&&isLate(t.due)?" late":""}">${fmt(t.due)}</span>`:"";
+  return `<li class="${t.done?"done":""}"><input type="checkbox" data-toggle-task="${t.id}" ${t.done?"checked":""} aria-label="Done">
+    <div class="tt">${esc(t.title)}${t.appId&&appName(t.appId)?`<small>${esc(appName(t.appId))}</small>`:""}</div>${due}
+    <button class="x" data-del-task="${t.id}" aria-label="Delete task">×</button></li>`;
+}
+function renderTasks(){
+  const cur=$("#tApp").value;$("#tApp").innerHTML=appOptions(cur);
+  const open=S.tasks.filter(t=>!t.done).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
+  const t0=today(),wk=addDays(7);
+  const groups=[["Overdue",open.filter(t=>t.due&&t.due<t0),"overdue"],["Today",open.filter(t=>t.due===t0)],["Next 7 days",open.filter(t=>t.due>t0&&t.due<=wk)],["Later",open.filter(t=>t.due>wk)],["No date",open.filter(t=>!t.due)],
+    ["Done",S.tasks.filter(t=>t.done).sort((a,b)=>(b.doneAt||"").localeCompare(a.doneAt||"")).slice(0,15)]].filter(g=>g[1].length);
+  $("#taskGroups").innerHTML=groups.length?groups.map(([n,l,c])=>`<div class="group"><h3 class="${c||""}">${n}<span class="mono">${l.length}</span></h3><ul class="tlist">${l.map(taskLi).join("")}</ul></div>`).join("")
+    :`<div class="empty" style="margin-top:16px">No tasks yet. Add one above, or move an application to Applied and a follow-up appears here.</div>`;
+}
+function fileBlock(r){
+  return r.fileId?`<div class="file"><span class="fname">${esc(r.fileName||"Resume file")}${r.fileSize?` <span class="muted mono">${fmtSize(r.fileSize)}</span>`:""}</span>
+    <button class="btn sm" data-file-open="${r.id}">Open</button><button class="btn sm" data-file-save="${r.id}">Download</button></div>`
+    :`<div class="file"><span class="muted">No file yet. Open Edit to attach it.</span></div>`;
+}
+function renderResumes(){
+  if(!S.resumes.length){$("#resumeGrid").innerHTML=`<div class="empty" style="grid-column:1/-1">No resume versions yet. Add one for each tailored version you send.</div>`;return}
+  $("#resumeGrid").innerHTML=S.resumes.slice().sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||"")).map(r=>{
+    const used=S.apps.filter(a=>a.resumeId===r.id);
+    return `<div class="tile">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><h3>${esc(r.name)}</h3><button class="btn sm" data-open-resume="${r.id}">Edit</button></div>
+      ${r.focus?`<div class="chips"><span class="chip">${esc(r.focus)}</span></div>`:""}
+      ${r.notes?`<div class="preview">${esc(r.notes)}</div>`:""}
+      ${fileBlock(r)}
+      <div class="used">${used.length?"Sent to "+used.map(a=>esc(a.company)).join(", "):"Not linked to an application yet"}</div>
+    </div>`}).join("");
+}
+function renderKb(){
+  $("#kbChips").innerHTML=["All",...KB_CATS].map(c=>`<button class="fchip" data-kbcat="${esc(c)}" aria-pressed="${c===kbCat}">${esc(c)}${c!=="All"?` <span class="mono">${S.kb.filter(k=>k.category===c).length}</span>`:""}</button>`).join("");
+  const q=($("#kbSearch").value||"").toLowerCase();
+  const items=S.kb.filter(k=>(kbCat==="All"||k.category===kbCat)&&(!q||(k.title+" "+k.body+" "+(k.tags||"")).toLowerCase().includes(q)))
+    .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  $("#kbGrid").innerHTML=items.length?items.map(k=>`<button class="tile" data-open-kb="${k.id}">
+      <div class="chips"><span class="chip">${esc(k.category)}</span>${k.appId&&appName(k.appId)?`<span class="chip res">${esc(appName(k.appId))}</span>`:""}</div>
+      <h3>${esc(k.title)}</h3><div class="preview">${esc(k.body)}</div></button>`).join("")
+    :`<div class="empty" style="grid-column:1/-1">${S.kb.length?"Nothing matches that filter.":"Save STAR stories, company research, interview questions and email templates here."}</div>`;
+}
+
+/* ===== drawer ===== */
+function openDrawer(kind,id,preset){
+  drawer={kind,id};$("#scrim").hidden=false;$("#drawer").hidden=false;
+  ({app:drawApp,kb:drawKb,resume:drawResume})[kind](id,preset);
+  setTimeout(()=>{const f=$("#dBody input,#dBody textarea");f&&f.focus()},30);
+}
+function closeDrawer(){drawer=null;$("#scrim").hidden=true;$("#drawer").hidden=true}
+const fld=(id,label,val,type="text",ph="")=>`<label class="f"><span>${label}</span><input type="${type}" id="${id}" value="${esc(val)}" placeholder="${esc(ph)}"></label>`;
+const sel=(id,label,opts,val)=>`<label class="f"><span>${label}</span><select id="${id}">${opts.map(o=>Array.isArray(o)?o:[o,o]).map(([v,n])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(n)}</option>`).join("")}</select></label>`;
+const area=(id,label,val,ph="",rows=4)=>`<label class="f"><span>${label}</span><textarea id="${id}" rows="${rows}" placeholder="${esc(ph)}">${esc(val)}</textarea></label>`;
+const foot=del=>`${del?`<button class="btn danger" data-action="delete">${del}</button>`:""}<span class="sp"></span><button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="save">Save</button>`;
+
+function drawApp(id){
+  const a=S.apps.find(x=>x.id===id)||{stage:"applied",appliedOn:today(),priority:"Medium"};
+  $("#dTitle").textContent=id?a.company:"New application";
+  const resOpts=[["","None picked"],...S.resumes.map(r=>[r.id,r.name])];
+  $("#dBody").innerHTML=`
+    <div class="two">${fld("aCo","Company",a.company,"text","Acme Corp")}${fld("aRole","Role",a.role,"text","Solutions Architect II")}</div>
+    <div class="two"><label class="f"><span>Stage</span><select id="aStage" class="st-${a.stage}" style="border-left:4px solid var(--st)">${STAGES.map(([k,n])=>`<option value="${k}"${k===a.stage?" selected":""}>${esc(n)}</option>`).join("")}</select></label>${sel("aPri","Priority",["High","Medium","Low"],a.priority||"Medium")}</div>
+    <div class="two">${fld("aApplied","Applied on",a.appliedOn,"date")}${sel("aRes","Resume sent",resOpts,a.resumeId||"")}</div>
+    <div class="two">${fld("aLoc","Location",a.location,"text","City, State")}${sel("aWork","Work type",["","Remote","Hybrid","On-site"],a.workType||"")}</div>
+    <div class="two">${fld("aSal","Salary range",a.salary,"text","$120k–$140k")}${fld("aSrc","Source",a.source,"text","LinkedIn, referral, recruiter")}</div>
+    ${fld("aUrl","Job posting link",a.url,"url","https://")}
+    <div class="two">${fld("aContact","Contact",a.contact,"text","Recruiter or hiring manager")}${fld("aEmail","Contact email",a.email,"email")}</div>
+    <div class="two">${fld("aNext","Next step",a.nextStep,"text","Phone screen with recruiter")}${fld("aNextD","Next step date",a.nextDate,"date")}</div>
+    ${area("aNotes","Notes",a.notes,"Interview impressions, people you met, salary talks",4)}
+    ${area("aJd","Job description",a.jd,"Paste the posting here. Listings often get taken down after they close.",6)}
+    ${id?`<div class="sub"><h3>Stage history</h3><ul class="timeline">${(a.history||[]).slice().reverse().map(h=>`<li><span class="mono">${fmt(h.at)}</span>${mark(h.stage)}${esc(STAGE_NAME[h.stage]||h.stage)}</li>`).join("")||`<li class="muted">No changes yet</li>`}</ul></div>
+    <div class="sub"><h3>Tasks</h3><ul class="tlist" id="dTasks"></ul>
+      <div class="linkrow"><input type="text" id="dTaskT" placeholder="Add a task for this application"><input type="date" id="dTaskD" style="width:150px"><button class="btn sm" data-action="add-app-task">Add</button></div></div>
+    <div class="sub"><h3>Linked notes</h3><div id="dNotes"></div><div><button class="btn sm" data-action="new-kb-for-app">+ Note for this application</button></div></div>`:""}`;
+  $("#dFoot").innerHTML=foot(id?"Delete application":"");
+  if(id)renderAppLinks();
+}
+function renderAppLinks(){
+  const id=drawer.id,ts=S.tasks.filter(t=>t.appId===id).sort((a,b)=>(a.done-b.done)||(a.due||"9999").localeCompare(b.due||"9999"));
+  const el=$("#dTasks");if(el)el.innerHTML=ts.map(taskLi).join("")||`<li class="muted">No tasks</li>`;
+  const ns=S.kb.filter(k=>k.appId===id),n=$("#dNotes");
+  if(n)n.innerHTML=ns.length?`<div class="chips">${ns.map(k=>`<button class="fchip" data-open-kb="${k.id}">${esc(k.category)}: ${esc(k.title)}</button>`).join("")}</div>`:`<span class="hint">No notes linked yet.</span>`;
+}
+function drawKb(id,preset={}){
+  const k=S.kb.find(x=>x.id===id)||{category:kbCat!=="All"?kbCat:"Note",...(preset||{})};
+  $("#dTitle").textContent=id?k.title:"New knowledge entry";
+  const body=k.category==="STAR story"&&!k.body?"Situation:\n\nTask:\n\nAction:\n\nResult (with a number if you can):\n":k.body;
+  $("#dBody").innerHTML=`${fld("kTitle","Title",k.title,"text","e.g. Leading a system migration")}
+    <div class="two">${sel("kCat","Category",KB_CATS,k.category)}<label class="f"><span>Application</span><select id="kApp">${appOptions(k.appId)}</select></label></div>
+    ${fld("kTags","Tags",k.tags,"text","leadership, migration, customer")}
+    ${area("kBody","Content",body,"",14)}`;
+  $("#dFoot").innerHTML=foot(id?"Delete entry":"");
+}
+function drawResume(id){
+  const r=S.resumes.find(x=>x.id===id)||{};
+  $("#dTitle").textContent=id?r.name:"New resume version";
+  $("#dBody").innerHTML=`${fld("rName","Version name",r.name,"text","Solutions Architect – Acme")}
+    ${fld("rFocus","Focus",r.focus,"text","Technical / solutions architect")}
+    ${area("rNotes","What's different in this version",r.notes,"Which skills you led with, what you cut, keywords from the posting",5)}
+    <div class="sub"><h3>File</h3>
+      ${r.fileId?fileBlock(r):""}
+      ${idb?`<input type="file" id="rFile" accept=".pdf,.docx,.doc,.txt,.md,.rtf,.odt"><span class="hint">PDF or Word.${r.fileId?" Choosing a new file replaces the current one.":""}</span>`:`<span class="hint">File storage isn't available in this browser.</span>`}
+    </div>`;
+  $("#dFoot").innerHTML=foot(id?"Delete version":"");
+}
+
+/* ===== actions ===== */
+const v=id=>{const e=document.getElementById(id);return e?e.value.trim():""};
+async function changeStage(a,stage,patch={}){
+  const upd={...patch,stage,history:[...(a.history||[]),{stage,at:today()}]};
+  if(stage==="applied"&&!a.appliedOn&&!patch.appliedOn)upd.appliedOn=today();
+  Object.assign(a,upd);
+  const auto={applied:[`Follow up on ${a.role} application`,7],interviewing:[`Send thank-you notes after ${a.company} interview`,1],offer:[`Review and negotiate ${a.company} offer`,2]}[stage];
+  if(auto){S.tasks.push({id:uid(),title:auto[0],due:addDays(auto[1]),appId:a.id,done:false,auto:true,createdAt:new Date().toISOString()});toast(`Moved to ${STAGE_NAME[stage]}. Added task: ${auto[0]}`)}
+  else toast(`Moved to ${STAGE_NAME[stage]}`);
+  await persist();
+}
+async function save(){
+  const {kind,id}=drawer,now=new Date().toISOString();
+  if(kind==="app"){
+    const o={company:v("aCo"),role:v("aRole"),priority:v("aPri"),appliedOn:v("aApplied"),resumeId:v("aRes"),location:v("aLoc"),workType:v("aWork"),salary:v("aSal"),source:v("aSrc"),url:v("aUrl"),contact:v("aContact"),email:v("aEmail"),nextStep:v("aNext"),nextDate:v("aNextD"),notes:v("aNotes"),jd:v("aJd"),updatedAt:now};
+    if(!o.company||!o.role){toast("Add a company and a role.");return}
+    const stage=v("aStage");
+    if(id){const a=S.apps.find(x=>x.id===id);if(a.stage!==stage)await changeStage(a,stage,o);else{await col("apps").update(id,o);toast("Saved")}}
+    else{await col("apps").add({...o,stage,history:[{stage,at:today()}],createdAt:now});toast("Application added")}
+  }else if(kind==="kb"){
+    const o={title:v("kTitle"),category:v("kCat"),appId:v("kApp"),tags:v("kTags"),body:document.getElementById("kBody").value,updatedAt:now};
+    if(!o.title){toast("Give the entry a title.");return}
+    id?await col("kb").update(id,o):await col("kb").add({...o,createdAt:now});toast("Saved");
+  }else if(kind==="resume"){
+    const o={name:v("rName"),focus:v("rFocus"),notes:v("rNotes"),updatedAt:now};
+    if(!o.name){toast("Name this resume version.");return}
+    const f=document.getElementById("rFile")?.files?.[0];
+    if(f){
+      const ext=(f.name.split(".").pop()||"").toLowerCase();
+      const type=f.type||FILE_TYPES[ext]||"application/octet-stream";
+      const fileId="f-"+uid();
+      try{await putFile(fileId,new Blob([f],{type}))}catch(e){toast("Couldn't store that file. Your browser storage may be full.");return}
+      const old=id&&S.resumes.find(x=>x.id===id);
+      if(old&&old.fileId)delFile(old.fileId);
+      Object.assign(o,{fileId,fileName:f.name,fileSize:f.size,fileType:type});
+    }
+    id?await col("resumes").update(id,o):await col("resumes").add({...o,createdAt:now});toast("Saved");
+  }
+  closeDrawer();
+}
+async function del(btn){
+  if(!btn.classList.contains("armed")){btn.classList.add("armed");btn.textContent="Click again to delete";return}
+  const {kind,id}=drawer;
+  if(kind==="app"){S.tasks=S.tasks.filter(t=>t.appId!==id);S.kb.forEach(k=>{if(k.appId===id)k.appId=""});S.apps=S.apps.filter(a=>a.id!==id)}
+  else if(kind==="kb")S.kb=S.kb.filter(k=>k.id!==id);
+  else if(kind==="resume"){const r=S.resumes.find(x=>x.id===id);if(r&&r.fileId)delFile(r.fileId);S.apps.forEach(a=>{if(a.resumeId===id)a.resumeId=""});S.resumes=S.resumes.filter(x=>x.id!==id)}
+  await persist();toast("Deleted");closeDrawer();
+}
+async function fileAction(rid,download){
+  const r=S.resumes.find(x=>x.id===rid);if(!r||!r.fileId)return;
+  const blob=await getFile(r.fileId).catch(()=>null);
+  if(!blob){toast("That file isn't stored in this browser. Attach it again from Edit.");return}
+  const url=URL.createObjectURL(blob);
+  if(download){const a=document.createElement("a");a.href=url;a.download=r.fileName||"resume";document.body.appendChild(a);a.click();a.remove()}
+  else{const w=window.open(url,"_blank");if(!w){const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove()}}
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+
+/* ===== csv ===== */
+const csvCell=v=>{v=v==null?"":String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+function downloadCsv(name,header,rows){
+  const text="\uFEFF"+[header,...rows].map(r=>r.map(csvCell).join(",")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([text],{type:"text/csv;charset=utf-8"}));
+  const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);toast("CSV saved to your downloads");
+}
+function csvApps(){
+  const order=Object.fromEntries(STAGES.map(([k],i)=>[k,i]));
+  const rows=S.apps.slice().sort((a,b)=>order[a.stage]-order[b.stage]||a.company.localeCompare(b.company)).map(a=>{
+    const open=S.tasks.filter(t=>t.appId===a.id&&!t.done).length;
+    return [a.company,a.role,STAGE_NAME[a.stage]||a.stage,a.priority,a.appliedOn,resName(a.resumeId),a.location,a.workType,a.salary,a.source,a.url,a.contact,a.email,a.nextStep,a.nextDate,open,
+      (a.history||[]).map(h=>h.at+" "+(STAGE_NAME[h.stage]||h.stage)).join(" > "),a.notes,(a.createdAt||"").slice(0,10)]});
+  downloadCsv(`job-applications-${today()}.csv`,["Company","Role","Stage","Priority","Applied on","Resume sent","Location","Work type","Salary range","Source","Posting link","Contact","Contact email","Next step","Next step date","Open tasks","Stage history","Notes","Added on"],rows);
+}
+function csvTasks(){
+  const rows=S.tasks.slice().sort((a,b)=>(a.done-b.done)||(a.due||"9999").localeCompare(b.due||"9999")).map(t=>{
+    const a=S.apps.find(x=>x.id===t.appId);
+    return [t.title,t.due,t.done?"Done":(t.due&&t.due<today()?"Overdue":"Open"),a?a.company:"",a?a.role:"",(t.doneAt||"").slice(0,10)]});
+  downloadCsv(`job-tasks-${today()}.csv`,["Task","Due","Status","Company","Role","Completed on"],rows);
+}
+
+/* ===== backup ===== */
+const blobToDataUrl=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(b)});
+async function exportBackup(){
+  const files={};
+  for(const r of S.resumes)if(r.fileId){const b=await getFile(r.fileId).catch(()=>null);if(b)files[r.fileId]=await blobToDataUrl(b)}
+  const data=JSON.stringify({app:"fernando-job-hunt",version:1,exportedAt:new Date().toISOString(),state:S,files});
+  const url=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  const a=document.createElement("a");a.href=url;a.download=`job-hunt-backup-${today()}.json`;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  try{localStorage.setItem("jh-lastBackup",today())}catch(e){}
+  toast("Backup saved to your downloads");
+}
+let pendingImport=null;
+async function importBackup(file){
+  try{
+    const j=JSON.parse(await file.text());
+    if(!j||j.app!=="fernando-job-hunt"||!j.state){toast("That file isn't a backup from this tracker.");return}
+    pendingImport=j;
+    openConfirm(`Replace everything with the backup from ${fmt((j.exportedAt||"").slice(0,10))||"that file"}? It has ${j.state.apps.length} applications, ${j.state.resumes.length} resumes, ${j.state.kb.length} notes and ${j.state.tasks.length} tasks. What's here now will be replaced.`);
+  }catch(e){toast("Couldn't read that file.")}
+}
+function openConfirm(msg){
+  drawer={kind:"confirm"};$("#scrim").hidden=false;$("#drawer").hidden=false;
+  $("#dTitle").textContent="Import backup";
+  $("#dBody").innerHTML=`<p>${esc(msg)}</p>`;
+  $("#dFoot").innerHTML=`<span class="sp"></span><button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="confirm-import">Replace with backup</button>`;
+}
+async function doImport(){
+  const j=pendingImport;pendingImport=null;if(!j)return;
+  for(const r of S.resumes)if(r.fileId)await delFile(r.fileId);
+  for(const [fid,url] of Object.entries(j.files||{})){try{const b=await (await fetch(url)).blob();await putFile(fid,b)}catch(e){console.error(e)}}
+  S={apps:j.state.apps||[],resumes:j.state.resumes||[],kb:j.state.kb||[],tasks:j.state.tasks||[]};
+  await persist();closeDrawer();toast("Backup imported");
+}
+
+/* ===== events ===== */
+document.addEventListener("click",async e=>{
+  if(e.target.closest(".stage-pill"))return;
+  const t=e.target.closest("[data-action],[data-open-app],[data-open-kb],[data-open-resume],[data-del-task],[data-kbcat],[data-tab],[data-theme-set],[data-file-open],[data-file-save]");
+  if(!t)return;
+  if(t.dataset.themeSet)return applyTheme(t.dataset.themeSet);
+  if(t.dataset.tab){tab=t.dataset.tab;document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));["board","tasks","resumes","kb"].forEach(k=>$("#v-"+k).hidden=k!==tab);try{localStorage.setItem("jh-tab",tab)}catch(_){};return}
+  if(t.dataset.openApp)return openDrawer("app",t.dataset.openApp);
+  if(t.dataset.openKb)return openDrawer("kb",t.dataset.openKb);
+  if(t.dataset.openResume)return openDrawer("resume",t.dataset.openResume);
+  if(t.dataset.fileOpen)return fileAction(t.dataset.fileOpen,false);
+  if(t.dataset.fileSave)return fileAction(t.dataset.fileSave,true);
+  if(t.dataset.kbcat){kbCat=t.dataset.kbcat;renderKb();return}
+  if(t.dataset.delTask)return col("tasks").del(t.dataset.delTask);
+  const a=t.dataset.action;
+  if(a==="close")closeDrawer();
+  else if(a==="new-app")openDrawer("app");
+  else if(a==="new-kb")openDrawer("kb");
+  else if(a==="new-resume")openDrawer("resume");
+  else if(a==="save")save();
+  else if(a==="delete")del(t);
+  else if(a==="export")exportBackup();
+  else if(a==="csv-apps")csvApps();
+  else if(a==="csv-tasks")csvTasks();
+  else if(a==="import")$("#importFile").click();
+  else if(a==="confirm-import")doImport();
+  else if(a==="new-task-focus"){document.querySelector('[data-tab="tasks"]').click();$("#tTitle").focus()}
+  else if(a==="new-kb-for-app"){const appId=drawer.id;openDrawer("kb",null,{appId,category:"Company research"})}
+  else if(a==="add-app-task"){
+    const title=v("dTaskT");if(!title)return;
+    await col("tasks").add({title,due:v("dTaskD"),appId:drawer.id,done:false,createdAt:new Date().toISOString()});
+    $("#dTaskT").value="";$("#dTaskD").value="";
+  }
+});
+document.addEventListener("change",e=>{
+  const id=e.target.dataset&&e.target.dataset.toggleTask;
+  if(id){const done=e.target.checked;col("tasks").update(id,{done,doneAt:done?new Date().toISOString():""})}
+  if(e.target.id==="aStage")e.target.className="st-"+e.target.value;
+  const sf=e.target.dataset&&e.target.dataset.stageFor;
+  if(sf){const a=S.apps.find(x=>x.id===sf);if(a&&a.stage!==e.target.value)changeStage(a,e.target.value)}
+  if(e.target.id==="importFile"&&e.target.files[0]){importBackup(e.target.files[0]);e.target.value=""}
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&drawer)closeDrawer();
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".card[data-open-app]")){e.preventDefault();openDrawer("app",e.target.dataset.openApp)}
+});
+$("#taskForm").addEventListener("submit",async e=>{
+  e.preventDefault();const title=v("tTitle");if(!title)return;
+  await col("tasks").add({title,due:v("tDue"),appId:$("#tApp").value,done:false,createdAt:new Date().toISOString()});
+  $("#tTitle").value="";$("#tDue").value="";toast("Task added");
+});
+$("#appSearch").addEventListener("input",renderBoard);
+$("#showClosed").addEventListener("change",renderBoard);
+$("#kbSearch").addEventListener("input",renderKb);
+let dragId=null;
+$("#board").addEventListener("dragstart",e=>{if(e.target.closest&&e.target.closest(".stage-pill")){e.preventDefault();return}const c=e.target.closest("[data-open-app]");if(!c)return;dragId=c.dataset.openApp;e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",dragId)}catch(_){}});
+$("#board").addEventListener("dragover",e=>{const c=e.target.closest(".col");if(!c||!dragId)return;e.preventDefault();document.querySelectorAll(".col.drop").forEach(x=>x!==c&&x.classList.remove("drop"));c.classList.add("drop")});
+$("#board").addEventListener("dragleave",e=>{const c=e.target.closest(".col");if(c&&!c.contains(e.relatedTarget))c.classList.remove("drop")});
+$("#board").addEventListener("drop",async e=>{
+  const c=e.target.closest(".col");if(!c||!dragId)return;e.preventDefault();c.classList.remove("drop");
+  const a=S.apps.find(x=>x.id===dragId);dragId=null;
+  if(a&&a.stage!==c.dataset.stage)await changeStage(a,c.dataset.stage);
+});
+$("#board").addEventListener("dragend",()=>{dragId=null;document.querySelectorAll(".col.drop").forEach(x=>x.classList.remove("drop"))});
+
+/* ===== boot ===== */
+(async()=>{
+  let theme="system";try{theme=localStorage.getItem("jh-theme")||"system"}catch(e){}
+  applyTheme(theme);
+  try{const t=localStorage.getItem("jh-tab");if(t&&t!=="board")document.querySelector(`[data-tab="${t}"]`)?.click()}catch(_){}
+  idb=await openIdb();
+  let saved=null;try{saved=await loadState()}catch(e){console.error(e)}
+  if(saved)S={apps:saved.apps||[],resumes:saved.resumes||[],kb:saved.kb||[],tasks:saved.tasks||[]};
+  else{S=seed();await persist()}
+  let ok=!!idb;if(!ok){try{localStorage.setItem("jh-test","1");localStorage.removeItem("jh-test");ok=true}catch(e){}}
+  $("#storeWarn").hidden=ok;
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+  render();
+})();
+</script>
+</body>
+</html>
